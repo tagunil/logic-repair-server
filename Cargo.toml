@@ -1,0 +1,13 @@
+[package]
+name = "logic-repair-server"
+version = "0.1.0"
+authors = ["Ilya Tagunov <tagunil@gmail.com>"]
+
+[dependencies]
+rocket = "^0.3"
+rocket_contrib = "^0.3"
+rocket_codegen = "^0.3"
+serialport = "^2.3"
+serde = "^1.0"
+serde_derive = "^1.0"
+hex = "^0.3"
