@@ -140,7 +140,8 @@ fn try_sync(
     port_name: &str,
     shared_systems: &Arc<Mutex<Systems>>,
 ) -> Result<(), io::Error> {
-    let port = serialport::open(port_name)?;
+    let mut port = serialport::open(port_name)?;
+    port.set_timeout(Duration::from_millis(500))?;
 
     let mut reader = BufReader::new(port.try_clone().unwrap());
     let mut writer = LineWriter::new(port.try_clone().unwrap());
