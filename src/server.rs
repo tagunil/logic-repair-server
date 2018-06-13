@@ -6,7 +6,7 @@ use rocket_contrib::Json;
 use super::System;
 use super::Systems;
 
-#[get("/", format = "application/json")]
+#[get("/")]
 fn index(
     state: rocket::State<Arc<Mutex<Systems>>>
 ) -> Json<Vec<usize>> {
@@ -14,7 +14,7 @@ fn index(
     Json((0..systems.len()).collect())
 }
 
-#[get("/<id>", format = "application/json")]
+#[get("/<id>")]
 fn get_system(
     id: usize,
     state: rocket::State<Arc<Mutex<Systems>>>,
@@ -27,7 +27,7 @@ fn get_system(
     }
 }
 
-#[post("/<id>", format = "application/json", data = "<system>")]
+#[post("/<id>", data = "<system>")]
 fn set_system(
     id: usize,
     system: Json<System>,
@@ -42,9 +42,25 @@ fn set_system(
     }
 }
 
+#[error(400)]
+fn bad_request() -> Json<()> {
+    Json(())
+}
+
+#[error(404)]
+fn not_found() -> Json<()> {
+    Json(())
+}
+
+#[error(500)]
+fn internal_error() -> Json<()> {
+    Json(())
+}
+
 pub(crate) fn run(shared_systems: Arc<Mutex<Systems>>) {
     rocket::ignite()
           .mount("/system", routes![index, get_system, set_system])
           .manage(shared_systems)
+          .catch(errors![bad_request, not_found, internal_error])
           .launch();
 }
