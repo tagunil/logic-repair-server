@@ -1,5 +1,5 @@
 use std::thread;
-use std::time::Duration;
+use std::time::{Duration, SystemTime, UNIX_EPOCH};
 use std::io::{self, BufRead, BufReader, Write, LineWriter};
 use std::sync::{Arc, Mutex};
 
@@ -71,6 +71,9 @@ fn read_systems<T: BufRead, U: Write>(
         )),
     }?;
 
+    let time_now = SystemTime::now();
+    let timestamp = time_now.duration_since(UNIX_EPOCH).unwrap().as_secs();
+
     let mut systems: Systems = Vec::new();
 
     for index in 0..8 {
@@ -81,6 +84,7 @@ fn read_systems<T: BufRead, U: Write>(
         systems.push(System {
             programmed: first,
             corrected: Some(second),
+            timestamp: Some(timestamp),
         });
     }
 
@@ -162,6 +166,8 @@ fn try_sync(
                 } else {
                     server_system.corrected = device_system.corrected;
                 }
+
+                server_system.timestamp = device_system.timestamp;
             }
         }
     }

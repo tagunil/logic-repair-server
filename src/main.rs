@@ -17,6 +17,7 @@ use std::sync::{Arc, Mutex};
 struct System {
     programmed: u16,
     corrected: Option<u16>,
+    timestamp: Option<u64>,
 }
 
 type Systems = Vec<System>;
