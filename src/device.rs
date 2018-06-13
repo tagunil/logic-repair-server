@@ -78,12 +78,18 @@ fn read_systems<T: BufRead, U: Write>(
 
     for index in 0..8 {
         let base = index * 4;
-        let first = ((data[base + 1] as u16) << 8) + (data[base + 0] as u16);
-        let second = ((data[base + 3] as u16) << 8) + (data[base + 2] as u16);
+
+        let high = data[base + 1] as u16;
+        let low = data[base + 0] as u16;
+        let programmed = (high << 8) + low;
+
+        let high = data[base + 3] as u16;
+        let low = data[base + 2] as u16;
+        let corrected = (high << 8) + low;
 
         systems.push(System {
-            programmed: first,
-            corrected: Some(second),
+            programmed: programmed,
+            corrected: Some(corrected),
             timestamp: Some(timestamp),
         });
     }
