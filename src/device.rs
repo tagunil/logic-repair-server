@@ -39,36 +39,18 @@ fn read_systems<T: BufRead, U: Write>(
 
     match words.next() {
         Some("DATA") => Ok(()),
-        Some("ERROR") => Err(io::Error::new(
-            io::ErrorKind::InvalidData,
-            "Device error",
-        )),
-        Some(_) => Err(io::Error::new(
-            io::ErrorKind::InvalidData,
-            "Unknown response",
-        )),
-        None => Err(io::Error::new(
-            io::ErrorKind::InvalidData,
-            "Invalid response",
-        )),
+        Some("ERROR") => Err(io::Error::new(io::ErrorKind::InvalidData, "Device error")),
+        Some(_) => Err(io::Error::new(io::ErrorKind::InvalidData, "Unknown response")),
+        None => Err(io::Error::new(io::ErrorKind::InvalidData, "Invalid response")),
     }?;
 
     let data = match words.next() {
         Some(string) if string.len() == 64 => match hex::decode(string) {
             Ok(bytes) => Ok(bytes),
-            Err(_) => Err(io::Error::new(
-                io::ErrorKind::InvalidData,
-                "Invalid data",
-            )),
+            Err(_) => Err(io::Error::new(io::ErrorKind::InvalidData, "Invalid data")),
         },
-        Some(_) => Err(io::Error::new(
-            io::ErrorKind::InvalidData,
-            "Invalid data length",
-        )),
-        None => Err(io::Error::new(
-            io::ErrorKind::InvalidData,
-            "Missing data",
-        )),
+        Some(_) => Err(io::Error::new(io::ErrorKind::InvalidData, "Invalid data length")),
+        None => Err(io::Error::new(io::ErrorKind::InvalidData, "Missing data")),
     }?;
 
     let time_now = SystemTime::now();
@@ -121,18 +103,9 @@ fn write_systems<T: BufRead, U: Write>(
 
     match words.next() {
         Some("OK") => Ok(()),
-        Some("ERROR") => Err(io::Error::new(
-            io::ErrorKind::InvalidData,
-            "Device error",
-        )),
-        Some(_) => Err(io::Error::new(
-            io::ErrorKind::InvalidData,
-            "Unknown response",
-        )),
-        None => Err(io::Error::new(
-            io::ErrorKind::InvalidData,
-            "Invalid response",
-        )),
+        Some("ERROR") => Err(io::Error::new(io::ErrorKind::InvalidData, "Device error")),
+        Some(_) => Err(io::Error::new(io::ErrorKind::InvalidData, "Unknown response")),
+        None => Err(io::Error::new(io::ErrorKind::InvalidData, "Invalid response")),
     }
 }
 
