@@ -12,6 +12,7 @@ mod server;
 
 use std::thread;
 use std::sync::{Arc, Mutex};
+use std::collections::HashMap;
 
 #[derive(Serialize, Deserialize, Clone, Copy)]
 struct System {
@@ -20,10 +21,10 @@ struct System {
     timestamp: Option<u64>,
 }
 
-type Systems = Vec<System>;
+type Systems = HashMap<usize, System>;
 
 fn main() {
-    let shared_systems: Arc<Mutex<Systems>> = Arc::new(Mutex::new(Vec::new()));
+    let shared_systems: Arc<Mutex<Systems>> = Arc::new(Mutex::new(HashMap::new()));
 
     let device_shared_systems = Arc::clone(&shared_systems);
     let device_thread = thread::spawn(move || {

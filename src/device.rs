@@ -2,6 +2,7 @@ use std::thread;
 use std::time::{Duration, SystemTime, UNIX_EPOCH};
 use std::io::{self, BufRead, BufReader, Write, LineWriter};
 use std::sync::{Arc, Mutex};
+use std::collections::HashMap;
 
 use serialport::{self, SerialPortType};
 
@@ -56,7 +57,7 @@ fn read_systems<T: BufRead, U: Write>(
     let time_now = SystemTime::now();
     let timestamp = time_now.duration_since(UNIX_EPOCH).unwrap().as_secs();
 
-    let mut systems: Systems = Vec::new();
+    let mut systems: Systems = HashMap::new();
 
     for index in 0..8 {
         let base = index * 4;
@@ -69,7 +70,7 @@ fn read_systems<T: BufRead, U: Write>(
         let low = data[base + 2] as u16;
         let corrected = (high << 8) + low;
 
-        systems.push(System {
+        systems.insert(index, System {
             programmed: programmed,
             corrected: Some(corrected),
             timestamp: Some(timestamp),
@@ -84,16 +85,20 @@ fn write_systems<T: BufRead, U: Write>(
     reader: &mut T,
     writer: &mut U,
 ) -> Result<(), io::Error> {
+    if systems.is_empty() {
+        return Ok(());
+    }
+
     let mut data: Vec<u8> = Vec::new();
 
-    for (index, system) in systems.iter().enumerate() {
+    for (&index, system) in systems.iter() {
         data.push(0xc5);
         data.push(index as u8);
         data.push(system.programmed as u8);
         data.push((system.programmed >> 8) as u8);
     }
 
-    let request = format!("WRITE 50 32 {}\r\n", hex::encode(data));
+    let request = format!("WRITE 50 {} {}\r\n", data.len(), hex::encode(data));
     writer.write_all(request.as_bytes())?;
 
     let mut response: String = String::new();
@@ -119,41 +124,24 @@ fn try_sync(
     let mut reader = BufReader::new(port.try_clone().unwrap());
     let mut writer = LineWriter::new(port.try_clone().unwrap());
 
-    let mut write_required = false;
-
     let mut device_systems = read_systems(&mut reader, &mut writer)?;
+    let mut changed_systems: Systems = HashMap::new();
 
     {
         let mut server_systems = shared_systems.lock().unwrap();
-        if server_systems.is_empty() {
-            server_systems.extend(&device_systems);
-        } else {
-            let server_iterator = server_systems.iter_mut();
-            let device_iterator = device_systems.iter_mut();
-            let zipped_iterator = server_iterator.zip(device_iterator);
-            for (server_system, device_system) in zipped_iterator {
-                if device_system.programmed != server_system.programmed {
-                    if server_system.programmed == 0x0000 {
-                        device_system.corrected = Some(0x0000);
-                        server_system.corrected = Some(0x0000);
-                    } else {
-                        device_system.corrected = Some(0xffff);
-                        server_system.corrected = Some(0xffff);
-                    }
-
-                    device_system.programmed = server_system.programmed;
-                    write_required = true;
-                } else {
-                    server_system.corrected = device_system.corrected;
-                }
-
-                server_system.timestamp = device_system.timestamp;
+        for (&index, device_system) in device_systems.iter_mut() {
+            let server_system = server_systems.entry(index).or_insert(*device_system);
+            if device_system.programmed != server_system.programmed {
+                changed_systems.insert(index, *server_system);
+            } else {
+                server_system.corrected = device_system.corrected;
             }
+            server_system.timestamp = device_system.timestamp;
         }
     }
 
-    if write_required {
-        write_systems(&device_systems, &mut reader, &mut writer)?;
+    if !changed_systems.is_empty() {
+        write_systems(&changed_systems, &mut reader, &mut writer)?;
     }
 
     Ok(())

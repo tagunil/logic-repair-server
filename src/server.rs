@@ -11,34 +11,43 @@ fn index(
     state: rocket::State<Arc<Mutex<Systems>>>
 ) -> Json<Vec<usize>> {
     let systems = state.lock().unwrap();
-    Json((0..systems.len()).collect())
+    let mut indexes: Vec<usize> = systems.keys().map(|reference| *reference).collect();
+    indexes.sort_unstable();
+    Json(indexes)
 }
 
-#[get("/<id>")]
+#[get("/<index>")]
 fn get_system(
-    id: usize,
+    index: usize,
     state: rocket::State<Arc<Mutex<Systems>>>,
 ) -> Option<Json<System>> {
     let systems = state.lock().unwrap();
-    if id < systems.len() {
-        Some(Json(systems[id]))
-    } else {
-        None
+    match systems.get(&index) {
+        Some(server_system) => Some(Json(*server_system)),
+        None => None,
     }
 }
 
-#[post("/<id>", data = "<system>")]
+#[post("/<index>", data = "<client_system>")]
 fn set_system(
-    id: usize,
-    system: Json<System>,
+    index: usize,
+    client_system: Json<System>,
     state: rocket::State<Arc<Mutex<Systems>>>,
 ) -> Option<Json<System>> {
     let mut systems = state.lock().unwrap();
-    if id < systems.len() {
-        systems[id].programmed = system.programmed;
-        Some(Json(systems[id]))
-    } else {
-        None
+    match systems.get_mut(&index) {
+        Some(server_system) => {
+            if server_system.programmed != client_system.programmed {
+                server_system.programmed = client_system.programmed;
+                if server_system.programmed == 0x0000 {
+                    server_system.corrected = Some(0x0000);
+                } else {
+                    server_system.corrected = Some(0xffff);
+                }
+            }
+            Some(Json(*server_system))
+        },
+        None => None,
     }
 }
 
