@@ -51,17 +51,17 @@ fn set_system(
     }
 }
 
-#[error(400)]
+#[catch(400)]
 fn bad_request() -> Json<()> {
     Json(())
 }
 
-#[error(404)]
+#[catch(404)]
 fn not_found() -> Json<()> {
     Json(())
 }
 
-#[error(500)]
+#[catch(500)]
 fn internal_error() -> Json<()> {
     Json(())
 }
@@ -70,6 +70,6 @@ pub(crate) fn run(shared_systems: Arc<Mutex<Systems>>) {
     rocket::ignite()
           .mount("/system", routes![index, get_system, set_system])
           .manage(shared_systems)
-          .catch(errors![bad_request, not_found, internal_error])
+          .catch(catchers![bad_request, not_found, internal_error])
           .launch();
 }
